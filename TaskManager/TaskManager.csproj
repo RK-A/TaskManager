@@ -57,9 +57,9 @@
     <Content Include="resource\Employee.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Resource Include="resource\request_projects.txt">
+    <Content Include="resource\request_projects.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Resource>
+    </Content>
     <Content Include="resource\req_tasks.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
