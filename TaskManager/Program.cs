@@ -14,6 +14,7 @@ namespace TaskManager
         private const string  PATH_WORKER = @"resource\Employee.txt";
         private const string PATH_REQ_PROJ = @"resource\request_projects.txt";
         private const string PATH_TASKS = @"resource\req_tasks.txt";
+        private const string PATH_REJ_TASKS = @"resource\rej_tasks.txt";
         static void Main(string[] args)
         {
             List<Worker> workers= new List<Worker>();
@@ -65,6 +66,8 @@ namespace TaskManager
 
 
         }
+
+
         static string ChangeUser(List<Worker> workers, out Post rank, out string proj)
         {
             bool flag = true;
@@ -74,6 +77,7 @@ namespace TaskManager
             proj = null;//
             while (flag)
             {
+                Console.WriteLine("заказчик, имя разработчика или имя team leadera");
                 Console.WriteLine("Введите за кого хотите войти ");
                 string input = Console.ReadLine();
                 worker = workers.Find(x => x.Name.ToLower().Equals(input.ToLower()));
@@ -213,9 +217,11 @@ namespace TaskManager
                 }
                 else
                 {
-                    Console.WriteLine("\"Открыть\" проект и посмотреть отчеты к нему\n" +
-                    "\"Выдать@текст задания@кому@тип(1 если много отчетная 0 если разовая)@{число(месяцев,дней...)}@{Д,Н,М,Г}) \" - предложить задание \n" +
-                    "\"Проверить №\"-подтвердить выполнение задачи №\n" +
+                    Console.WriteLine("\"Открыть\" посмотреть отчеты\n" +
+                    "\"Выдать@текст задания@кому@тип только 0@{число(месяцев,дней...)}@{Д,Н,М,Г})\"-предложить задание \n" +
+                    "\"Проверить@№\"-подтвердить выполнение задачи № или без номера посмотреть\n" +
+                    "\"отклоненные\"-задания\n" +
+                    "\"перевыдать@№@кому\" - задание\n"+
                     "\"Закрыть\"-проект\n" +
                     "\"Начать\"-проект в стадию исполнения");
                     Console.ResetColor();
@@ -229,7 +235,7 @@ namespace TaskManager
                         switch (input[0])
                         {
                             case "открыть":
-                                CheckTask(proj);
+                                CheckOrders(proj);
                                 break;
                             case "выдать":
                                 int stat;
@@ -253,24 +259,38 @@ namespace TaskManager
                                 int num;
                                 if (input.Length==1)
                                 {
-                                    CheckOrders(proj);
+                                    CheckTask(proj);
                                 }
-                                else if(int.TryParse(input[1],out num))
+                                else if(input.Length == 2&&int.TryParse(input[1],out num))
                                 {
                                     AllowedTask(proj,num);
                                 }
                                 break;
                             case "закрыть":
-                                project.CloseProject();
+                                project.CloseProject(proj);
                                 break;
                             case "начать":
-                                project.StartProject();
+                                project.StartProject(proj);
                                 break;
                             case "отмена":
                                 flag = false;
                                 break;
                             case "выйти":
                                 flag = false;
+                                break;
+                            case "отклоненные":
+                                ViewRejTask(proj);
+                                break;
+                            case "перевыдать":
+                                if (input.Length==3 && int.TryParse(input[1] ,out num))
+                                {
+                                    ReGiveTask(num,input[2],adminName);
+                                    Console.WriteLine("Вы передали задание");
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Неправильный ввод");
+                                }
                                 break;
                             default:
                                 Console.WriteLine("Вы ввели неправильно");
@@ -291,13 +311,13 @@ namespace TaskManager
                 if (proj == "" || !Directory.Exists($@"resource\{proj}"))
                 {
                     Console.WriteLine("\"Посмотреть\" чтобы посмотреть задания в предложке\n" +
-                        "\"Задание № {брать,делегировать,отклонить}\"");
+                        "\"Задание № {взять,делегировать,отклонить} {кому если делегировать}\"");
                 }
                 else
                 {
                     Console.WriteLine("\"Посмотреть\" чтобы посмотреть задачи\n" +
-                        "\"Выполнить № %\" сделать задачу и отчет к ней (если задача разовая и % выполнения достиг 100)\n" /*+
-                        "\"Сделать \" - создать отчет для  "*/);
+                        "\"Выполнить №\" сделать задачу и отчет к ней \n" +
+                        "\"Задание № {взять,делегировать,отклонить} {кому если делегировать}\"");
                 }
                 Console.ResetColor();
                 string[] input = Console.ReadLine().ToLower().Split();
@@ -307,24 +327,55 @@ namespace TaskManager
                         CheckTasks(proj,name);
                         break;
                     case "задание":
-                        int num;
-                        if (input.Length==3&&int.TryParse(input[1],out num)&& (input[2].Equals("брать") || input[2].Equals("делегировать") || input[2].Equals("отклонить") ))
+                        int num=0;
+                        if (input.Length == 3 && int.TryParse(input[1], out num) && (input[2].Equals("взять")   ))
                         {
-                            TakeTask(name,num,input[2]);
+                            if (proj=="")
+                            {
+                                proj = TakeTask(name, num);
+                            }
+                            else
+                            {
+                                TakeTask(name, num, proj);
+                            }
+                            Console.WriteLine("Вы взяли задачу");
+                        }
+                        else if (input.Length == 4 && int.TryParse(input[1], out num) && input[2].Equals("делегировать"))
+                        {
+                            DelegateTask(name,input[3],num,proj);
+                            Console.WriteLine("Вы делегировали задачу");
+                        }
+                        else if (input.Length == 3 && int.TryParse(input[1], out num) && input[2].Equals("отклонить"))
+                        {
+                            RejectTask(name,num,proj);
+                            Console.WriteLine("Вы отклонили задачу");
+                        }
+                        else
+                        {
+                            Console.WriteLine("Не правильный ввод");
                         }
                         break;
                     case "выполнить":
-                        if (proj!=""&&int.TryParse(input[1],out num))
+                        if (proj!=""&&int.TryParse(input[1],out num)&& CompleteTask(name, num, proj))
                         {
-                            CompleteTask(name, num,proj);
+                            Console.WriteLine("Вы выполнили задачу");
                         }
                         break;
+                    case "отмена":
+                        flag = false;
+                        break;
+                    case "выйти":
+                        flag = false;
+                        break;
                     default:
+                        Console.WriteLine("Не правильная команда");
                         break;
                 }
 
             }
         }
+
+
         static void AddProjEmployee(string name, string proj)
         {
             List<string> workers = new List<string>();
@@ -391,16 +442,19 @@ namespace TaskManager
             {
                 string line;
                 while (!(line = strRead.ReadLine()).ToLower().Equals("задачи:")) ;
-                while ((line = strRead.ReadLine()) != null)
+                while ((line = strRead.ReadLine()) != null )
                 {
-                    Console.WriteLine(line);
+                    if (line.Split()[3].Equals("2"))
+                    {
+                        Console.WriteLine(line);
+                    }
                 }
             }
         }
         static void AllowedTask(string proj,int num)
         {
-            Console.WriteLine("Исполнитель инициатор срок");
             List<string> lines = new List<string>();
+            bool flag = false;
             using (StreamReader strRead = new StreamReader($@"resource\{proj}\main.txt"))
             {
                 int count = 0;
@@ -414,9 +468,24 @@ namespace TaskManager
                     {
                         lines.Add(line);
                     }
+                    else
+                    {
+                        if (line.Split()[3].Equals("2"))
+                        {
+                            flag = true;
+                        }
+                    }
                 }
             }
             File.WriteAllText($@"resource\{proj}\main.txt",string.Join("\r\n",lines));
+            if (flag)
+            {
+                Console.WriteLine("Задача подтверждена");
+            }
+            else
+            {
+                Console.WriteLine("Нельзя подтвердить");
+            }
 
         }
         static void CheckOrders(string proj)
@@ -426,7 +495,7 @@ namespace TaskManager
             {
                 if (order.Split('\\')[order.Split('\\').Length-1].Split('.')[0]!="main")
                 {
-                    Console.WriteLine(order.Split('\\')[order.Length - 1].Split('.')[0]+File.ReadAllText(order));
+                    Console.WriteLine(order.Split('\\')[order.Split('\\').Length - 1].Split('.')[0]+"\n"+File.ReadAllText(order));
                 }
             }
         }
@@ -463,13 +532,104 @@ namespace TaskManager
                 }
             }
         }
-        static void TakeTask(string name,int num, string command)
+        static string TakeTask(string name,int num)
         {
-            
+            int count=0;
+            string proj="";
+            List<string> lines = new List<string>();
+            using (StreamReader strRead = new StreamReader(PATH_TASKS))
+            {
+                string line;
+                while ((line = strRead.ReadLine()) != null)
+                {
+                    if (line.Split()[0].ToLower().Equals(name.ToLower()))
+                    {
+                        count++;
+                        if (count == num)
+                        {
+                            AddProjEmployee(name, line.Split()[5]);
+                            proj = line.Split()[5];
+                        }
+                    }
+                    else
+                    {
+                        lines.Add(line);
+                    }
+
+                }
+            }
+            count = 0;
+            File.WriteAllText(PATH_TASKS, string.Join("\r\n", lines));
+            lines = new List<string>();
+            using (StreamReader strRead = new StreamReader($@"resource\{proj}\main.txt"))
+            {
+                string line;
+                while (!(line = strRead.ReadLine()).ToLower().Equals("задачи:")) lines.Add(line);
+                lines.Add(line);
+                while ((line = strRead.ReadLine()) != null)
+                {
+                    if (line.Split()[0].ToLower().Equals(name.ToLower()))
+                    {
+                        count++;
+                        if (count != num)
+                        {
+                            lines.Add(line);
+                        }
+                        else
+                        {
+                            List<string> str =line.Split().ToList();
+                            str[3]="1";
+                            lines.Add(string.Join(" ",str));
+                        }
+                    }
+                    else
+                    {
+                        lines.Add(line);
+                    }
+
+                }
+            }
+            File.WriteAllText($@"resource\{proj}\main.txt", string.Join("\r\n", lines));
+            return proj;
         }
-        static void CompleteTask(string name,int num,string proj)
+        static void TakeTask(string name,int num,string proj)
+        {
+            int count = 0;
+            List<string> lines = new List<string>();
+            using (StreamReader strRead = new StreamReader($@"resource\{proj}\main.txt"))
+            {
+                string line;
+                while (!(line = strRead.ReadLine()).ToLower().Equals("задачи:")) lines.Add(line);
+                lines.Add(line);
+                while ((line = strRead.ReadLine()) != null)
+                {
+                    if (line.Split()[0].ToLower().Equals(name.ToLower()))
+                    {
+                        count++;
+                        if (count != num)
+                        {
+                            lines.Add(line);
+                        }
+                        else
+                        {
+                            List<string> str = line.Split().ToList();
+                            str[3] = "1";
+                            lines.Add(string.Join(" ", str));
+                        }
+                    }
+                    else
+                    {
+                        lines.Add(line);
+                    }
+
+                }
+            }
+            File.WriteAllText($@"resource\{proj}\main.txt", string.Join("\r\n", lines));
+        }
+        static bool CompleteTask(string name,int num,string proj)
         {
             List<string> lines = new List<string>();
+            bool flag=false;
             using (StreamReader strRead = new StreamReader($@"resource\{proj}\main.txt"))
             {
                 string line;
@@ -481,9 +641,23 @@ namespace TaskManager
                     if (line.Split()[0].ToLower().Equals(name.ToLower()))
                     {
                         count++;
-                        if (count == num)
+                        if (count != num)
                         {
-                            AddProjEmployee(name, line);
+                            lines.Add(line);
+                        }
+                        else
+                        {
+                            List<string> task = line.Split().ToList();
+                            if (task[3].Equals("1"))
+                            {
+                                flag = true;
+                                task[3] = "2";
+                                lines.Add(string.Join(" ",task));
+                            }
+                            else
+                            {
+                                Console.WriteLine("Нельзя сдать на проверку не принятую(законченную) задачу");
+                            }
                         }
                     }
                     else
@@ -493,7 +667,223 @@ namespace TaskManager
 
                 }
             }
-            File.WriteAllText(PATH_TASKS, string.Join("\r\n", lines));
+            File.WriteAllText($@"resource\{proj}\main.txt", string.Join("\r\n", lines));
+            CreateOReport(name,proj);
+            return flag;
+        }
+        static void DelegateTask(string name,string delName,int num,string proj)
+        {
+            if (proj=="")
+            {
+                int count = 0;
+                List<string> lines = new List<string>();
+                using (StreamReader strRead = new StreamReader(PATH_TASKS))
+                {
+                    string line;
+                    while ((line = strRead.ReadLine()) != null)
+                    {
+                        if (line.Split()[0].ToLower().Equals(name.ToLower()))
+                        {
+                            count++;
+                            if (count == num)
+                            {
+                                List<string> task= line.Split().ToList();
+                                task[0]=delName;
+                                lines.Add(string.Join(" ",task));
+                                DelegateTask(name, delName, num, task[5]);
+                            }
+                            else
+                            {
+                                lines.Add(line);
+                            }
+                        }
+                        else
+                        {
+                            lines.Add(line);
+                        }
+
+                    }
+                }
+                File.WriteAllText(PATH_TASKS, string.Join("\r\n", lines));
+            }
+            else
+            {
+                List<string> lines = new List<string>();
+                using (StreamReader strRead = new StreamReader($@"resource\{proj}\main.txt"))
+                {
+                    string line;
+                    int count = 0;
+                    while (!(line = strRead.ReadLine()).ToLower().Equals("задачи:")) lines.Add(line);
+                    lines.Add(line);
+                    while ((line = strRead.ReadLine()) != null)
+                    {
+                        if (line.Split()[0].ToLower().Equals(name.ToLower()))
+                        {
+                            count++;
+                            if (count != num)
+                            {
+                                lines.Add(line);
+                            }
+                            else
+                            {
+                                List<string> task = line.Split().ToList();
+                                task[0] = delName;
+                                lines.Add(string.Join(" ", task));
+                            }
+                        }
+                        else
+                        {
+                            lines.Add(line);
+                        }
+
+                    }
+                }
+                File.WriteAllText($@"resource\{proj}\main.txt", string.Join("\r\n", lines));
+            }
+        }
+        static void RejectTask(string name,int num,string proj)
+        {
+            if (proj == "")
+            {
+                int count = 0;
+                List<string> lines = new List<string>();
+                using (StreamReader strRead = new StreamReader(PATH_TASKS))
+                {
+                    string line;
+                    while ((line = strRead.ReadLine()) != null)
+                    {
+                        if (line.Split()[0].ToLower().Equals(name.ToLower()))
+                        {
+                            count++;
+                            if (count == num)
+                            {
+                                File.WriteAllText(PATH_REJ_TASKS,File.ReadAllText(PATH_REJ_TASKS)+"\r\n"+line);
+                                DeleteTask(name,num,$@"resource\{line.Split()[5]}\main.txt");
+
+                            }
+                            else
+                            {
+                                lines.Add(line);
+                            }
+                        }
+                        else
+                        {
+                            lines.Add(line);
+                        }
+
+                    }
+                }
+                File.WriteAllText(PATH_TASKS,string.Join("\r\n",lines));
+            }
+            else
+            {
+                int count = 0;
+                List<string> lines = new List<string>();
+                using (StreamReader strRead = new StreamReader($@"resource\{proj}\main.txt"))
+                {
+                    string line;
+                    while ((line = strRead.ReadLine()) != null)
+                    {
+                        if (line.Split()[0].ToLower().Equals(name.ToLower()))
+                        {
+                            count++;
+                            if (count == num)
+                            {
+                                File.WriteAllText(PATH_REJ_TASKS, File.ReadAllText(PATH_REJ_TASKS) + "\r\n" + line);
+                            }
+                            else
+                            {
+                                lines.Add(line);
+                            }
+                        }
+                        else
+                        {
+                            lines.Add(line);
+                        }
+
+                    }
+                }
+                File.WriteAllText($@"resource\{proj}\main.txt", string.Join("\r\n", lines));
+            }
+        }
+
+        static void CreateOReport(string name,string proj)
+        {
+            Console.WriteLine("Введите описание отчета");
+            string text = Console.ReadLine();
+            Console.WriteLine("Введите название отчета");
+            string title = Console.ReadLine();
+            Report rep = new Report(text,name,proj,title);
+        }
+
+        static void ViewRejTask(string proj)
+        {
+            using (StreamReader strRead = new StreamReader(PATH_REJ_TASKS))
+            {
+                string line;
+                while ((line=strRead.ReadLine())!=null)
+                {
+                    if (line.Length> 5&& line.Split()[5].Equals(proj))
+                    {
+                        Console.WriteLine(line);
+                    }
+                }
+            }
+        }
+        static void DeleteTask(string name, int num, string path)
+        {
+            List<string> lines = new List<string>();
+            using (StreamReader strRead = new StreamReader(path))
+            {
+                string line;
+                int count = 0;
+                while (!(line = strRead.ReadLine()).ToLower().Equals("задачи:")) lines.Add(line);
+                lines.Add(line);
+                while ((line = strRead.ReadLine()) != null)
+                {
+                    if (line.Split()[0].ToLower().Equals(name.ToLower()))
+                    {
+                        count++;
+                        if (count != num)
+                        {
+                            lines.Add(line);
+                        }
+                    }
+                    else
+                    {
+                        lines.Add(line);
+                    }
+
+                }
+            }
+            File.WriteAllText(path, string.Join("\r\n", lines));
+        }
+
+        static void ReGiveTask(int num,string whom,string name)
+        {
+            List<string> text = new List<string>();
+            using (StreamReader strRead= new StreamReader(PATH_REJ_TASKS))
+            {
+                int count=1;
+                string line;
+                while ((line=strRead.ReadLine())!=null)
+                {
+                    if (count==num && line.Split().Length>5 && line.Split()[1].Equals(name))
+                    {
+                        count++;
+                        List<string> lin = line.Split().ToList();
+                        lin[0] = whom;
+                        File.WriteAllText(PATH_TASKS, File.ReadAllText(PATH_TASKS) + "\r\n" + string.Join(" ", lin));
+                    }
+                    else if(line.Split().Length > 5 && line.Split()[1].Equals(name)) { count++; }
+                    else
+                    {
+                        text.Add(line);
+                    }
+                }
+            }
+            File.WriteAllText(PATH_REJ_TASKS,string.Join("\r\n",text));
         }
     }
+
 }

@@ -17,8 +17,6 @@ namespace TaskManager
         private string executor;
         private Project project;
         private bool isOneTimeTask;
-        private Report report;
-        private List<Report> reports;
         private string path;
 
         public Task(string description, DateTime deadline, StatusTask status, string initiator, string executor, Project project, bool isOneTimeTask, string path)
@@ -77,8 +75,6 @@ namespace TaskManager
         public string Initiator  => initiator;
         public string Executor => executor;
 
-        internal Report Report  => report; 
-        internal List<Report> Reports  => reports;
         internal StatusTask Status => status;
         internal Project Project => project; 
     }

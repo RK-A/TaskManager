@@ -12,7 +12,6 @@ namespace TaskManager
     {
         private string name;
         private Post post;
-        private List<Task> tasks;
         private Project project;
         private string nameProject;
 
@@ -29,18 +28,12 @@ namespace TaskManager
         public string Name => name;
         public string NameProject => nameProject;
 
-        internal Post Post => post; 
-        internal List<Task> Tasks => tasks;
+        internal Post Post => post;
         public void AddTask(Task task)
         {
-            if (project==null)
+            if (project == null)
             {
-                tasks.Add(task);
                 AttachedProject(task.Project);
-            }
-            else if(task.Project.Equals(project))
-            {
-                tasks.Add(task);
             }
         }
         public void AttachedProject(Project project) => this.project = project;

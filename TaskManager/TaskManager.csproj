@@ -57,6 +57,15 @@
     <Content Include="resource\Employee.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="resource\grandtour\main.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="resource\grandtour\андрей_оранж.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="resource\rej_tasks.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="resource\request_projects.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

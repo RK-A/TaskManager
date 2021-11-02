@@ -1,7 +1,7 @@
-﻿Даниил TL
+Даниил TL
 Руслан dev
-Андрей dev
-Сергей TL
+Андрей dev grandtour
+Сергей TL grandtour
 Женя dev
 Артем dev
 Дима dev

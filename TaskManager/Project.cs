@@ -67,6 +67,7 @@ namespace TaskManager
             }
             else
             {
+                Console.WriteLine("Проект уже в работе");
                 return false;
             }
         }
@@ -74,11 +75,23 @@ namespace TaskManager
         {
             tasks.Add(task);
         }
-        public void StartProject()
+        public void StartProject(string path)
         {
             if ((int)status<1)
             {
                 status += 1;
+                List<string> main = new List<string>();
+                using (StreamReader strRead = new StreamReader($@"resource\{path}\main.txt"))
+                {
+                    string line= strRead.ReadLine();
+                    string des = line.Split(')')[0].Split('(')[1];
+                    List<string> text = line.Replace("("+des+") ","").Split().ToList();
+                    text[2] = "1";
+                    main.Add(string.Join(" ","("+des+")",string.Join(" ",text)));
+                    while ((line = strRead.ReadLine()) != null) main.Add(line);
+                }
+                File.WriteAllText($@"resource\{path}\main.txt", string.Join("\r\n",main));
+                Console.WriteLine("Проект переведен в работу");
             }
             else if((int)status==2)
             {
@@ -89,9 +102,9 @@ namespace TaskManager
                 Console.WriteLine("Проект уже в работе");
             }
         }
-        public void CloseProject()
+        public void CloseProject(string path)
         {
-            if (tasks.Count==0)
+            if (tasks.Count==0 || IsNoTask(path))
             {
                 status = StatusProject.Closed;
             }
@@ -100,6 +113,17 @@ namespace TaskManager
                 Console.WriteLine("Нельзя закрыть проект т.к он еще не начат или не все задания выполнены");
             }
         }
+
+        private bool IsNoTask(string path)
+        {
+            using (StreamReader strRead = new StreamReader($@"resource\{path}\main.txt"))
+            {
+                string line;
+                while (!(line = strRead.ReadLine()).ToLower().Equals("задачи:")) ;
+                return (line = strRead.ReadLine()) == null;
+            }
+        }
+
        
     }
 }
