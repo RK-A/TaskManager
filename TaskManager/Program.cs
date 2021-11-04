@@ -111,7 +111,7 @@ namespace TaskManager
             bool flag = true;
             while (flag)
             {
-                Console.BackgroundColor = ConsoleColor.Magenta;
+                Console.BackgroundColor = ConsoleColor.DarkGreen;
                 Console.WriteLine(/*"\"Посмотреть\" чтобы посмотреть проекты\n" +*/
                     "\"Создать@{название проекта}@{Содержание проекта}@{число(месяцев,дней...)}@{Д,Н,М,Г}\" - добавить проект в предложку\n " +
                     "ОТМЕНА или ВЫЙТИ чтоб выйти" /*+
@@ -146,7 +146,7 @@ namespace TaskManager
             Project project = null;
             while (flag)
             {
-                Console.BackgroundColor = ConsoleColor.Magenta;
+                Console.BackgroundColor = ConsoleColor.DarkGreen;
                 if (proj=="")
                 {
                     Console.WriteLine("\"Посмотреть\" чтобы посмотреть проекты в предложке\n" +
@@ -203,10 +203,16 @@ namespace TaskManager
                         case "посмотреть":
                             using (StreamReader strRead = new StreamReader(PATH_REQ_PROJ))
                             {
+                                int count = 0;
                                 string line;
                                 while ((line = strRead.ReadLine()) != null)
                                 {
                                     Console.WriteLine(line);
+                                    count++;
+                                }
+                                if (count==0)
+                                {
+                                    Console.WriteLine("Проектов нет");
                                 }
                             }
                             break;
@@ -219,7 +225,8 @@ namespace TaskManager
                 {
                     Console.WriteLine("\"Открыть\" посмотреть отчеты\n" +
                     "\"Выдать@текст задания@кому@тип только 0@{число(месяцев,дней...)}@{Д,Н,М,Г})\"-предложить задание \n" +
-                    "\"Проверить@№\"-подтвердить выполнение задачи № или без номера посмотреть\n" +
+                    "\"Проверить@№{Посмотреть}\"-подтвердить выполнение задачи № \n" +
+                    "\"Вернуть@№\" выполненое задание\n" +
                     "\"отклоненные\"-задания\n" +
                     "\"перевыдать@№@кому\" - задание\n"+
                     "\"Закрыть\"-проект\n" +
@@ -266,6 +273,12 @@ namespace TaskManager
                                     AllowedTask(proj,num);
                                 }
                                 break;
+                            case "вернуть":
+                                if (input.Length == 2 && int.TryParse(input[1], out num))
+                                {
+                                    RejectTask(proj,num);
+                                }
+                                break;
                             case "закрыть":
                                 project.CloseProject(proj);
                                 break;
@@ -307,7 +320,7 @@ namespace TaskManager
             bool flag = true;
             while (flag)
             {
-                Console.BackgroundColor = ConsoleColor.Magenta;
+                Console.BackgroundColor = ConsoleColor.DarkGreen;
                 if (proj == "" || !Directory.Exists($@"resource\{proj}"))
                 {
                     Console.WriteLine("\"Посмотреть\" чтобы посмотреть задания в предложке\n" +
@@ -441,13 +454,19 @@ namespace TaskManager
             using (StreamReader strRead = new StreamReader($@"resource\{proj}\main.txt"))
             {
                 string line;
+                int count = 0;
                 while (!(line = strRead.ReadLine()).ToLower().Equals("задачи:")) ;
                 while ((line = strRead.ReadLine()) != null )
                 {
                     if (line.Split()[3].Equals("2"))
                     {
                         Console.WriteLine(line);
+                        count++;
                     }
+                }
+                if (count==0)
+                {
+                    Console.WriteLine("Задач на проверку нет");
                 }
             }
         }
@@ -491,12 +510,18 @@ namespace TaskManager
         static void CheckOrders(string proj)
         {
             string[] orders = Directory.GetFiles($@"resource\{proj}");
+            int count = 0;
             foreach (var order in orders)
             {
                 if (order.Split('\\')[order.Split('\\').Length-1].Split('.')[0]!="main")
                 {
                     Console.WriteLine(order.Split('\\')[order.Split('\\').Length - 1].Split('.')[0]+"\n"+File.ReadAllText(order));
+                    count++;
                 }
+            }
+            if (count==0)
+            {
+                Console.WriteLine("Нет отчетов");
             }
         }
 
@@ -507,12 +532,17 @@ namespace TaskManager
                 using (StreamReader strRead= new StreamReader(PATH_TASKS))
                 {
                     string line;
+                    int count = 0;
                     while ((line=strRead.ReadLine())!=null)
                     {
                         if (line.Split()[0].ToLower().Equals(name.ToLower()))
                         {
                             Console.WriteLine(line);
                         }
+                    }
+                    if (count == 0)
+                    {
+                        Console.WriteLine("Задач нет");
                     }
                 }
             }
@@ -521,13 +551,20 @@ namespace TaskManager
                 using (StreamReader strRead = new StreamReader($@"resource\{proj}\main.txt"))
                 {
                     string line;
+                    int count = 0;
                     while (!(line = strRead.ReadLine()).ToLower().Equals("задачи:")) ;
                     while ((line = strRead.ReadLine()) != null)
                     {
+
                         if (line.Split()[0].ToLower().Equals(name.ToLower()))
                         {
                             Console.WriteLine(line);
+                            count++;
                         }
+                    }
+                    if (count==0)
+                    {
+                        Console.WriteLine("Задач нет");
                     }
                 }
             }
@@ -653,6 +690,7 @@ namespace TaskManager
                                 flag = true;
                                 task[3] = "2";
                                 lines.Add(string.Join(" ",task));
+                                CreateOReport(name, proj);
                             }
                             else
                             {
@@ -668,7 +706,6 @@ namespace TaskManager
                 }
             }
             File.WriteAllText($@"resource\{proj}\main.txt", string.Join("\r\n", lines));
-            CreateOReport(name,proj);
             return flag;
         }
         static void DelegateTask(string name,string delName,int num,string proj)
@@ -883,6 +920,42 @@ namespace TaskManager
                 }
             }
             File.WriteAllText(PATH_REJ_TASKS,string.Join("\r\n",text));
+        }
+        static void RejectTask(string proj,int num)
+        {
+            List<string> text = new List<string>();
+            int count = 1;
+            using (StreamReader strRead = new StreamReader($@"resource\{proj}\main.txt"))
+            {
+                string line;
+                while (!(line = strRead.ReadLine()).ToLower().Equals("задачи:")) text.Add(line);
+                text.Add(line);
+                while ((line = strRead.ReadLine()) != null)
+                {
+                    if (line.Split()[3].Equals("2")&&count==num)
+                    {
+                        List<string> str = line.Split().ToList();
+                        str[3] = "1";
+                        count++;
+                        text.Add(string.Join(" ",str));
+                        Console.WriteLine("Задача возвращена"); 
+                    }
+                    else if(line.Split()[3].Equals("2"))
+                    {
+                        count++;
+                        text.Add(line);
+                    }
+                    else
+                    {
+                        text.Add(line);
+                    }
+                }
+            }
+            File.WriteAllText($@"resource\{proj}\main.txt", string.Join("\r\n", text));
+            if (count<num||num<=0||count==num)
+            {
+                Console.WriteLine("Задачу вернуть невозможно");
+            }
         }
     }
 
