@@ -361,7 +361,6 @@ namespace TaskManager
                         else if (input.Length == 3 && int.TryParse(input[1], out num) && input[2].Equals("отклонить"))
                         {
                             RejectTask(name,num,proj);
-                            Console.WriteLine("Вы отклонили задачу");
                         }
                         else
                         {
@@ -796,6 +795,7 @@ namespace TaskManager
                             {
                                 File.WriteAllText(PATH_REJ_TASKS,File.ReadAllText(PATH_REJ_TASKS)+"\r\n"+line);
                                 DeleteTask(name,num,$@"resource\{line.Split()[5]}\main.txt");
+                                Console.WriteLine("Вы отклонили задачу");
 
                             }
                             else
@@ -809,6 +809,10 @@ namespace TaskManager
                         }
 
                     }
+                }
+                if (count == 0 || count < num)
+                {
+                    Console.WriteLine("Невозможно отклонить");
                 }
                 File.WriteAllText(PATH_TASKS,string.Join("\r\n",lines));
             }
@@ -827,6 +831,7 @@ namespace TaskManager
                             if (count == num)
                             {
                                 File.WriteAllText(PATH_REJ_TASKS, File.ReadAllText(PATH_REJ_TASKS) + "\r\n" + line);
+                                Console.WriteLine("Вы отклонили задачу");
                             }
                             else
                             {
@@ -839,6 +844,10 @@ namespace TaskManager
                         }
 
                     }
+                }
+                if (count==0||count<num)
+                {
+                    Console.WriteLine("Невозможно отклонить");
                 }
                 File.WriteAllText($@"resource\{proj}\main.txt", string.Join("\r\n", lines));
             }
